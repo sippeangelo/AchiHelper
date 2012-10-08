@@ -5,7 +5,77 @@ AchiHelper.CleanupTime = 60
 
 -- Achievement priority list
 AchiHelper.Regex = {
-
+	--[[
+		Happy Panda Land
+	]]--
+	-- Terrace of Endless Spring
+	[{"terrace of endless spring", "terrace", "toes", "tes"}] = {
+		6689,	-- Terrace of Endless Spring
+		6731,	-- Heroic: Protectors of the Endless
+		6733, 	-- Heroic: Lei Shi
+		6732, 	-- Heroic: Tsulong
+		6734,	-- Heroic: Sha of Fear
+		7487,	-- Cutting Edge: Sha of Fear
+		6678,	-- Realm First! Sha of Fear
+	},
+	
+	-- Heart of Fear
+	[{"heart of fear", "hof", "hf"}] = {
+		6718,	-- The Dread Approach
+		6845, 	-- Nightmare of Shek'zeer
+		6669,	-- Heart of Fear Guild Run
+		6725, 	-- Heroic: Imperial Vizier Zor'lok
+		6726,	-- Heroic: Blade Lord Ta'yak
+		6727,	-- Heroic: Garalon
+		6728,	-- Heroic: Wind Lord Mel'jarak
+		6729, 	-- Heroic: Amber-Shaper Un'sok
+		6730,	-- Heroic: Grand Empress Shek'zeer
+		7486, 	-- Cutting Edge: Grand Empress Shek'zeer
+		6679,	-- Realm First! Grand Empress Shek'zeer
+	},
+	
+	-- Mogu'shan Vaults
+	[{"mogu'shan vaults", "mogushan vaults", "mv", "msv", "mgsv"}] = {
+		6458,	-- Guardians of Mogu'shan
+		6844,	-- The Vault of Mysteries
+		6668, 	-- Mogu'shan Vaults Guild Run
+		6719,	-- Heroic: Stone Guard
+		6720,	-- Heroic: Feng the Accursed
+		6721,	-- Heroic: Gara'jal the Spiritbinder
+		6722,	-- Heroic: Four Kings
+		6723,	-- Heroic: Elegon
+		6724,	-- Heroic: Will of the Emperor	
+		7485,	-- Cutting Edge: Will of the Emperor
+		6680,	-- Realm First! Will of the Emperor
+	},
+	
+	-- World Boss: Salyis's Warband (Galleon)
+	[{"galleon"}] = {
+		6517, 	-- Extinction Event
+	},
+	
+	-- World Boss: Sha of Anger
+	[{"sha of anger"}] = {
+		6480, 	-- Settle Down, Bro
+	},	
+	
+	--[[
+		Cataslysm
+	]]--
+	-- Dragon Soul
+	[{"ds", "dragon soul", "dragons soul", "DS10", "DS25"}] = {
+		6107, -- Fall of Deathwing
+		6177, -- Destroyer's End
+		6109, -- Heroic: Morchok
+		6111, -- Heroic: Yor'sahj the Unsleeping
+		6113, -- Heroic: Ultraxion
+		6112, -- Heroic: Hagara the Stormbinder
+		6110, -- Heroic: Warlord Zon'ozz
+		6114, -- Heroic: Warmaster Blackhorn
+		6115, -- Heroic: Spine of Deathwing
+		6116, -- Heroic: Madness of Deathwing
+	},
+	
 	-- Firelands
 	[{"fl", "fire", "firelands"}] = {
 		5802,	-- Firelands
@@ -95,21 +165,32 @@ function AchiHelper:CHAT_MSG_CHANNEL(event, msg, author, language, channel, targ
 			end]]--
 			
 			for regex,achids in pairs(self.Regex) do
+				if (type(regex) ~= "table") then
+					regex = {regex}
+				end
+				
 				local matched = false
-				if (type(regex) == "table") then
-					for k,v in pairs(regex) do
-						if (string.find(msg, v) ~= nil) then
-							matched = true
-							break
-						end
-					end
-				else
-					if (string.find(msg, regex) ~= nil) then
+				for k,v in pairs(regex) do
+					-- Beginning of string
+					if (string.find(msg, "^" .. v .. "%s?%d*%s+") ~= nil) then
 						matched = true
+						break
 					end	
+					-- Middle of string
+					if (string.find(msg, ".+%s" .. v .. "%s?%d*%s+") ~= nil) then
+						matched = true
+						break
+					end
+					-- End of string
+					if (string.find(msg, ".+%s" .. v .. "%s?%d*$") ~= nil) then
+						matched = true
+						break
+					end
 				end
 				
 				if (matched) then
+					self.Raids[author] = {}
+					
 					for _,id in pairs(achids) do
 						-- Did we complete the achievement?
 						local _, _, _, completed = GetAchievementInfo(id)
@@ -127,14 +208,17 @@ function AchiHelper:CHAT_MSG_CHANNEL(event, msg, author, language, channel, targ
 							bestAchievement = id
 						end
 					end
+					
+					self.Raids[author]["achid"] = bestAchievement
+					self.Raids[author]["time"] = GetTime()
 				end
 			end
 			
-			if (bestAchievement ~= 0) then
-				self.Raids[author] = {}
-				self.Raids[author]["achid"] = bestAchievement
-				self.Raids[author]["time"] = GetTime()
-			end
+			--if (bestAchievement ~= 0) then
+			--	self.Raids[author] = {}
+			--	self.Raids[author]["achid"] = bestAchievement
+			--	self.Raids[author]["time"] = GetTime()
+			--end
 			--[[if (not string.find(msg, "lfg") and string.find(msg, "icc%s*10")) then
 				self:Print("Found ICC run: " .. author .. " - " .. msg)
 			end]]
@@ -156,24 +240,46 @@ end
 
 -- Modified blizzard ChatFrame_SendTell
 function AchiHelper:ChatFrame_SendTell(name, chatFrame)
-	local editBox = ChatEdit_ChooseBoxForSend(chatFrame);
+	local editBox = ChatEdit_ChooseBoxForSend(chatFrame)
 	
-	
-	-- Prepare the achievement
-	local achievement = ""
+	local text
 	if (self.Raids[name] ~= nil) then
-		achievement = " " .. GetAchievementLink(self.Raids[name]["achid"])
-	end
+		local class, lclass = UnitClass("player")
+		--local spec, _, _, _, lspec = LibTalentQuery:GetUnitTalentSpec("player")
+		--local role = LibTalentQuery:GetUnitRole("player")
+		local id, spec_name, description, icon, background, role = GetSpecializationInfo(GetSpecialization())
+
+		--[[if (lspec == "DruidFeralCombat") then
+			if (role == "melee") then
+				spec = "Feral DPS"
+			elseif (role == "tank") then
+				spec = "Feral Tank"
+			end
+		end]]--
+
+		local ilvl_total, ilvl_equipped = GetAverageItemLevel()
+		ilvl_total = floor(ilvl_total + .5)
+		ilvl_equipped = floor(ilvl_equipped + .5)
+		
+		text = SLASH_WHISPER1 .. " " .. name .. " " .. ilvl_equipped .. " " .. spec_name .. " " .. class
 	
-	local text = SLASH_WHISPER1 .. " " .. name .. " " .. achievement
-	
-	if ( editBox ~= ChatEdit_GetActiveWindow() ) then
-		ChatFrame_OpenChat(text, chatFrame);
+		-- Prepare the achievement
+		if (self.Raids[name]["achid"] ~= 0) then
+			local achievement = " " .. GetAchievementLink(self.Raids[name]["achid"])
+			text = text .. achievement
+		end		
 	else
-		editBox:SetText(text);
+		text = SLASH_WHISPER1 .. " " .. name .. " "
 	end
-	ChatEdit_ParseText(editBox, 0);
 	
-	editBox:SetCursorPosition(0)
-	--self:Print("Reply to " .. name)
+	if (editBox ~= ChatEdit_GetActiveWindow()) then
+		ChatFrame_OpenChat(text, chatFrame)
+	else
+		editBox:SetText(text)
+	end
+	ChatEdit_ParseText(editBox, 0)
+	
+	--editBox:SetCursorPosition(0)
+	editBox:SetCursorPosition(editBox:GetNumLetters())
+	
 end
