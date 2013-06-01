@@ -8,6 +8,44 @@ AchiHelper.Regex = {
 	--[[
 		Happy Panda Land
 	]]--
+	
+	-- Rated Battleground
+	["rbg"] = {
+		-- Horde
+		5345,	-- Scout
+		5346,	-- Grunt
+		5347,	-- Sergeant
+		5348,	-- Senior Sergeant
+		5349,	-- First Sergeant
+		5350,	-- Stone Guard
+		5351, 	-- Blood Guard
+		5352,	-- Legionnaire
+		5338,	-- Centurion
+		5353,	-- Champion
+		5354,	-- Lieutenant General
+		5355,	-- General
+		5342,	-- Warlord
+		5356,	-- High Warlord
+		6941,	-- Hero of the Horde
+		
+		-- Alliance
+		5330,	-- Private
+		5331,	-- Corporal
+		5332,	-- Sergeant
+		5333,	-- Master Sergeant
+		5334,	-- Sergeant Major
+		5335,	-- Knight
+		5336, 	-- Knight-Lieutenant
+		5337,	-- Knight-Captain
+		5338,	-- Knight-Champion
+		5339,	-- Lieutenant Commander
+		5340,	-- Commander
+		5341,	-- Marshal
+		5357,	-- Field Marshal
+		5343,	-- Grand Marshal
+		6942,	-- Hero of the Alliance
+	},
+	
 	-- Terrace of Endless Spring
 	[{"terrace of endless spring", "terrace", "toes", "tes"}] = {
 		6689,	-- Terrace of Endless Spring
@@ -143,26 +181,6 @@ function AchiHelper:CHAT_MSG_CHANNEL(event, msg, author, language, channel, targ
 	if (nChannel == 2 or nChannel == 4 or true) then
 		if (string.find(msg, "lfg") == nil) then
 			local bestAchievement = 0
-
-			--[[for regex,achids in pairs(self.Regex) do
-				if (string.find(msg, regex) ~= nil) then
-					for _,ids in pairs(achids) do
-						local _, _, _, completed_10 = GetAchievementInfo(ids[1])
-						local _, _, _, completed_25 = GetAchievementInfo(ids[2])
-						
-						if (completed_10) then
-							bestAchievement = ids[1]
-						end
-						
-						if (completed_25) then
-							bestAchievement = ids[2]
-						end
-					end
-
-					
-					--break;
-				end
-			end]]--
 			
 			for regex,achids in pairs(self.Regex) do
 				if (type(regex) ~= "table") then
@@ -213,15 +231,6 @@ function AchiHelper:CHAT_MSG_CHANNEL(event, msg, author, language, channel, targ
 					self.Raids[author]["time"] = GetTime()
 				end
 			end
-			
-			--if (bestAchievement ~= 0) then
-			--	self.Raids[author] = {}
-			--	self.Raids[author]["achid"] = bestAchievement
-			--	self.Raids[author]["time"] = GetTime()
-			--end
-			--[[if (not string.find(msg, "lfg") and string.find(msg, "icc%s*10")) then
-				self:Print("Found ICC run: " .. author .. " - " .. msg)
-			end]]
 		end
 	end
 	
@@ -245,17 +254,7 @@ function AchiHelper:ChatFrame_SendTell(name, chatFrame)
 	local text
 	if (self.Raids[name] ~= nil) then
 		local class, lclass = UnitClass("player")
-		--local spec, _, _, _, lspec = LibTalentQuery:GetUnitTalentSpec("player")
-		--local role = LibTalentQuery:GetUnitRole("player")
 		local id, spec_name, description, icon, background, role = GetSpecializationInfo(GetSpecialization())
-
-		--[[if (lspec == "DruidFeralCombat") then
-			if (role == "melee") then
-				spec = "Feral DPS"
-			elseif (role == "tank") then
-				spec = "Feral Tank"
-			end
-		end]]--
 
 		local ilvl_total, ilvl_equipped = GetAverageItemLevel()
 		ilvl_total = floor(ilvl_total + .5)
@@ -278,8 +277,6 @@ function AchiHelper:ChatFrame_SendTell(name, chatFrame)
 		editBox:SetText(text)
 	end
 	ChatEdit_ParseText(editBox, 0)
-	
-	--editBox:SetCursorPosition(0)
 	editBox:SetCursorPosition(editBox:GetNumLetters())
 	
 end
